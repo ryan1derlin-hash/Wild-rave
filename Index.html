@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wild Rave</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#160d30;color:white;font-family:Arial;text-align:center}
+header{padding:18px;background:#321653;font-size:26px;font-weight:bold;color:#ff9df5}
+#stage{height:350px;position:relative;overflow:hidden;background:radial-gradient(ellipse,#8540b8,#241039);border:3px solid #e359ed;border-radius:16px;margin:10px}
+#spot{position:absolute;top:12px;width:100%;font-weight:bold;color:#ffe68a;z-index:2}
+.dancer{position:absolute;font-size:42px;animation:dance .7s infinite alternate}
+.dancer small{display:block;font-size:11px;background:#241039;padding:4px;border-radius:6px}
+@keyframes dance{to{transform:translateY(-12px) rotate(10deg)}}
+.panel{background:#291a48;margin:10px;padding:14px;border-radius:14px}
+button{background:#ae4beb;color:white;border:0;border-radius:9px;padding:11px;margin:4px;font-weight:bold}
+input{padding:12px;border-radius:8px;border:0;width:90%;font-size:16px}
+#battle{display:none;background:#4d267b;padding:20px;margin:10px;border-radius:14px}
+#fighters{font-size:55px}
+#feed{font-size:13px;color:#ddc6ee}
+</style>
+</head>
+<body>
+<header>🪩 WILD RAVE 🪩</header>
+<div id="stage"><div id="spot">🎉 Welcome to the party!</div></div>
+<div id="battle">
+<h2>⚔️ DANCE BATTLE ⚔️</h2>
+<h1 id="timer">45</h1>
+<div id="fighters"></div>
+<p id="votes"></p>
+<button onclick="vote(1)">Vote !1</button>
+<button onclick="vote(2)">Vote !2</button>
+</div>
+<div class="panel">
+<h3>🎮 Join the Party</h3>
+<input id="user" value="PartyGuest" placeholder="Username">
+<p>
+<button onclick="join()">🐾 Join</button>
+<button onclick="like()">❤️ 100 Likes</button>
+<button onclick="follow()">⭐ Follow</button>
+</p>
+</div>
+<div class="panel">
+<h3>🎁 TikTok Gift Simulator</h3>
+<button onclick="gift('rose')">🌹 Rose</button>
+<button onclick="gift('doughnut')">🍩 Doughnut</button>
+<button onclick="gift('heart')">🫶 Hand Heart</button>
+<button onclick="gift('galaxy')">🦄 Galaxy</button>
+<button onclick="gift('jet')">🦁 Private Jet</button>
+<button onclick="gift('universe')">🐉 Universe</button>
+</div>
+<div class="panel">
+<button onclick="startBattle()">⚔️ Start Battle</button>
+<button onclick="demo()">👥 Add Dancers</button>
+<h3>🏆 Leaderboard</h3>
+<div id="leaders"></div>
+<h3>📣 Events</h3>
+<div id="feed"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const animals=["🦆","🐸","🐼","🐧","🐰","🦊"];
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+let players={},queue=[],battle=null,interval=null;
+const username=()=> $("user").value.trim().slice(0,20)||"PartyGuest";
+
+function log(s){
+let p=document.createElement("p");
+p.textContent=s;
+$("feed").prepend(p);
+while($("feed").children.length>10)$("feed").lastChild.remove();
+}
+function join(n=username()){
+if(!players[n]){
+players[n]={animal:pick(animals),xp:0,wins:0,x:10+Math.random()*75,y:65+Math.random()*210};
+log("🎉 @"+n+" joined!");
+}
+render();
+return players[n];
+}
+function render(){
+document.querySelectorAll(".dancer").forEach(e=>e.remove());
+Object.entries(players).forEach(([n,p])=>{
+let d=document.createElement("div");
+d.className="dancer";
+d.style.left=p.x+"%";
+d.style.top=p.y+"px";
+let a=document.createElement("div");
+a.textContent=p.animal;
+let label=document.createElement("small");
+label.textContent="@"+n;
+d.append(a,label);
+$("stage").append(d);
+});
+$("leaders").replaceChildren();
+Object.entries(players).sort((a,b)=>b[1].xp-a[1].xp).slice(0,8).forEach(([n,p],i)=>{
+let d=document.createElement("p");
+d.textContent=(i+1)+". "+p.animal+" @"+n+" — "+p.xp+" XP";
+$("leaders").append(d);
+});
+}
+function spotlight(n,event){
+$("spot").textContent="📸 @"+n+" — "+event;
+setTimeout(()=>$("spot").textContent="🎉 Dance party!",4500);
+}
+function like(){
+let n=username(),p=join(n);
+p.xp+=20;
+log("❤️ @"+n+" earned 20 XP!");
+render();
+}
+function follow(){
+let n=username(),p=join(n);
+p.xp+=75;
+spotlight(n,"New follower!");
+render();
+}
+function gift(g){
+let n=username(),p=join(n);
+let rewards={
+rose:[40,null,"Rose"],
+doughnut:[120,null,"Center stage solo"],
+heart:[150,null,"Next battle reservation"],
+galaxy:[600,"🦄","Galaxy unicorn"],
+jet:[1200,"🦁","Private Jet lion"],
+universe:[3000,"🐉","Universe dragon"]
+};
+let r=rewards[g];
+p.xp+=r[0];
+if(r[1])p.animal=r[1];
+if(g==="heart")queue.push(n);
+spotlight(n,r[2]);
+log("🎁 @"+n+" sent "+r[2]);
+render();
+}
+function demo(){
+for(let i=0;i<6;i++)join("Dancer"+Math.floor(Math.random()*9999));
+}
+function startBattle(){
+if(battle)return;
+if(Object.keys(players).length<2){
+join("DiscoDuck");join("PartyFrog");
+}
+let names=Object.keys(players);
+let a=queue.shift()||pick(names);
+let b=pick(names.filter(n=>n!==a));
+battle={a,b,v1:0,v2:0,seconds:45,voters:{}};
+$("battle").style.display="block";
+$("fighters").textContent=players[a].animal+" VS "+players[b].animal;
+updateBattle();
+log("⚔️ @"+a+" vs @"+b);
+interval=setInterval(()=>{
+battle.seconds--;
+updateBattle();
+if(battle.seconds<=0)endBattle();
+},1000);
+}
+function vote(side){
+if(!battle)return;
+let n=username();
+if(battle.voters[n])return;
+battle.voters[n]=true;
+if(side===1)battle.v1++;
+else battle.v2++;
+updateBattle();
+}
+function updateBattle(){
+$("timer").textContent=battle.seconds;
+$("votes").textContent="@"+battle.a+": "+battle.v1+" votes | @"+battle.b+": "+battle.v2+" votes";
+}
+function endBattle(){
+clearInterval(interval);
+let winner=battle.v1>battle.v2?battle.a:battle.v2>battle.v1?battle.b:null;
+if(winner){
+players[winner].xp+=200;
+players[winner].wins++;
+log("🏆 @"+winner+" wins!");
+spotlight(winner,"Battle champion!");
+}else log("🤝 Battle ended in a tie!");
+battle=null;
+$("battle").style.display="none";
+render();
+}
+setInterval(()=>{
+Object.values(players).forEach(p=>{
+p.x=Math.max(5,Math.min(85,p.x+(Math.random()-.5)*12));
+p.y=Math.max(60,Math.min(290,p.y+(Math.random()-.5)*20));
+});
+render();
+},1500);
+join("PartyHost");
+join("DiscoDuck");
+</script>
+</body>
+</html>
