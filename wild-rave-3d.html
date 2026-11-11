@@ -1,1 +1,513 @@
 
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+
+<title>Wild Rave 3D</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070414;font-family:Arial,sans-serif}
+
+canvas{display:block}
+
+#title{position:absolute;top:25px;left:18px;color:white;font-size:25px;font-weight:900;text-shadow:0 3px 12px black;pointer-events:none}
+
+#title span{color:#ff65d6}
+
+#status{position:absolute;top:64px;left:18px;color:#c8b9e8;font-size:11px;pointer-events:none}
+
+#hint{position:absolute;bottom:25px;width:100%;text-align:center;color:#ffffffa0;font-size:12px;pointer-events:none}
+
+#error{display:none;position:absolute;top:35%;left:8%;width:84%;padding:20px;background:#25143c;color:white;border-radius:12px}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="title">WILD <span>RAVE</span> 🪩</div>
+
+<div id="status">3D NIGHTCLUB • GRAPHICS TEST</div>
+
+<div id="hint">3D CAMERA • LIVE LIGHTING • ANIMATED ANIMALS</div>
+
+<div id="error"></div>
+
+<script type="module">
+
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js";
+
+const scene=new THREE.Scene();
+
+scene.background=new THREE.Color(0x090619);
+
+scene.fog=new THREE.FogExp2(0x090619,0.018);
+
+const camera=new THREE.PerspectiveCamera(53,innerWidth/innerHeight,0.1,200);
+
+camera.position.set(0,10,24);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+renderer.setSize(innerWidth,innerHeight);
+
+renderer.shadowMap.enabled=true;
+
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure=1.6;
+
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0x9b85ff,0x251126,2));
+
+function mat(color,metalness=0,roughness=.65){
+
+return new THREE.MeshStandardMaterial({color,metalness,roughness});
+
+}
+
+function glowMat(color){
+
+return new THREE.MeshBasicMaterial({color});
+
+}
+
+function box(w,h,d,m,x,y,z,parent=scene){
+
+let o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+
+o.position.set(x,y,z);
+
+o.castShadow=true;
+
+o.receiveShadow=true;
+
+parent.add(o);
+
+return o;
+
+}
+
+function ball(r,m,x,y,z,parent=scene){
+
+let o=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),m);
+
+o.position.set(x,y,z);
+
+o.castShadow=true;
+
+parent.add(o);
+
+return o;
+
+}
+
+function cone(r,h,m,x,y,z,parent=scene){
+
+let o=new THREE.Mesh(new THREE.ConeGeometry(r,h,5),m);
+
+o.position.set(x,y,z);
+
+o.castShadow=true;
+
+parent.add(o);
+
+return o;
+
+}
+
+function light(color,intensity,x,y,z,distance=20){
+
+let l=new THREE.PointLight(color,intensity,distance);
+
+l.position.set(x,y,z);
+
+scene.add(l);
+
+return l;
+
+}
+
+const dark=mat(0x171025);
+
+const wall=mat(0x261536);
+
+const chrome=mat(0x9695bc,.75,.22);
+
+const pink=glowMat(0xff36bc);
+
+const cyan=glowMat(0x24e9ff);
+
+const purple=glowMat(0xa85aff);
+
+const gold=glowMat(0xffd66b);
+
+box(36,.3,32,dark,0,-.25,0);
+
+box(36,15,.4,wall,0,7,-15);
+
+box(.4,15,32,wall,-18,7,0);
+
+box(.4,15,32,wall,18,7,0);
+
+for(let i=-5;i<=5;i++){
+
+box(.12,11,.15,i%2?pink:purple,i*3,6,-14.7);
+
+}
+
+for(let i=0;i<6;i++){
+
+box(35,.09,.09,i%2?cyan:purple,0,1+i*2,-14.6);
+
+}
+
+const floorColors=[0x26385c,0x4e245b,0x254e60,0x62305d];
+
+for(let x=-5;x<6;x++){
+
+for(let z=-4;z<6;z++){
+
+let tile=box(1.95,.07,1.95,mat(floorColors[(x+z+100)%4],.25,.3),x*2,.01,z*2);
+
+tile.receiveShadow=true;
+
+}
+
+}
+
+for(let i=-5;i<=5;i++){
+
+box(.055,.08,20,cyan,i*2+1,.08,1);
+
+}
+
+for(let i=-4;i<=5;i++){
+
+box(22,.08,.055,pink,0,.08,i*2+1);
+
+}
+
+box(18,1.2,5,mat(0x391d50),0,.5,-10.5);
+
+box(17,.15,.2,pink,0,1.2,-8.1);
+
+box(13,2.5,2.5,mat(0x221c38,.3),0,2,-11.7);
+
+box(13,.12,.15,cyan,0,3.3,-10.4);
+
+for(let s of [-1,1]){
+
+box(2.5,3,1.2,mat(0x161827),s*6,3.5,-11.3);
+
+ball(.85,mat(0x25253e),s*6,4,-10.6);
+
+ball(.55,mat(0x29293c),s*6,2.7,-10.6);
+
+ball(.35,purple,s*6,4,-9.98);
+
+}
+
+const dj=new THREE.Group();
+
+dj.position.set(0,3.3,-11.2);
+
+scene.add(dj);
+
+ball(.55,mat(0xe0a26f),0,.8,0,dj);
+
+box(1.25,1.1,.55,mat(0x46b2c8),0,-.15,0,dj);
+
+box(1.3,.2,.3,mat(0x17192d),0,1.25,0,dj);
+
+for(let s of [-1,1]){
+
+ball(.25,mat(0x222333),s*.55,.8,.05,dj);
+
+}
+
+box(7,.25,5,mat(0x4d245a),12,.3,-7);
+
+box(7,.7,.3,purple,12,.8,-4.5);
+
+for(let i=0;i<3;i++){
+
+box(1.7,.8,1.4,mat(0x763c80),9.5+i*2.4,.65,-7);
+
+}
+
+box(7,.12,.12,pink,12,1.25,-9.3);
+
+const disco=ball(1.05,chrome,0,11,0);
+
+let discoLight=light(0xdabaff,25,0,10,0,30);
+
+for(let i=0;i<4;i++){
+
+let a=i*Math.PI/2;
+
+let c=i%2?0x00dfff:0xff43b8;
+
+light(c,22,Math.cos(a)*10,9,Math.sin(a)*8,22);
+
+}
+
+const spots=[];
+
+for(let i=0;i<4;i++){
+
+let l=new THREE.SpotLight(i%2?0x39dfff:0xff4dcb,55,40,Math.PI/5,.6);
+
+l.position.set((i-1.5)*8,12,-9);
+
+l.target.position.set(0,0,2);
+
+scene.add(l,l.target);
+
+spots.push(l);
+
+}
+
+function animal(type,shirtColor,x,z,seed){
+
+const root=new THREE.Group();
+
+root.position.set(x,0,z);
+
+scene.add(root);
+
+let fur=mat(type==="fox"?0xd78a4e:type==="rabbit"?0xe8d5c9:type==="wolf"?0x8e9cac:type==="bear"?0xa67a59:0xc5a2a0);
+
+let muzzle=mat(0xf2d7bb);
+
+let clothes=mat(shirtColor,.12,.48);
+
+let pants=mat(0x24213b);
+
+let shoes=mat(0xf0eaff);
+
+let black=mat(0x21192c);
+
+let eyes=mat(0xffffff);
+
+let blush=mat(0xf49caa);
+
+const torso=new THREE.Group();
+
+root.add(torso);
+
+torso.position.y=2;
+
+let body=ball(.72,clothes,0,0,0,torso);
+
+body.scale.set(1,1.25,.7);
+
+let head=ball(.65,fur,0,1.15,.08,torso);
+
+head.scale.set(1,1,.85);
+
+ball(.4,muzzle,0,.88,.58,torso).scale.set(1,.55,.6);
+
+for(let s of [-1,1]){
+
+if(type==="rabbit"){
+
+let ear=ball(.19,fur,s*.37,2.05,.02,torso);
+
+ear.scale.set(1,2.6,.55);
+
+ball(.11,blush,s*.37,2.08,.14,torso).scale.set(1,3,.4);
+
+}else if(type==="bear"){
+
+ball(.24,fur,s*.52,1.62,0,torso);
+
+}else{
+
+let ear=cone(.27,.65,fur,s*.47,1.72,0,torso);
+
+ear.rotation.z=-s*.2;
+
+}
+
+ball(.19,eyes,s*.26,1.22,.55,torso);
+
+ball(.095,black,s*.26,1.22,.72,torso);
+
+ball(.045,eyes,s*.23,1.27,.8,torso);
+
+}
+
+ball(.13,black,0,.91,.82,torso);
+
+for(let s of [-1,1]){
+
+ball(.14,blush,s*.46,.91,.52,torso);
+
+}
+
+const arms=[];
+
+const legs=[];
+
+for(let s of [-1,1]){
+
+let arm=new THREE.Group();
+
+arm.position.set(s*.72,.37,0);
+
+torso.add(arm);
+
+let sleeve=ball(.26,clothes,s*.1,-.3,0,arm);
+
+sleeve.scale.set(.8,1.6,.85);
+
+ball(.2,fur,s*.14,-.76,0,arm);
+
+arms.push(arm);
+
+let leg=new THREE.Group();
+
+leg.position.set(s*.35,1.1,0);
+
+root.add(leg);
+
+let pant=ball(.25,pants,0,-.48,0,leg);
+
+pant.scale.set(1,2,.95);
+
+let shoe=ball(.31,shoes,0,-.94,.16,leg);
+
+shoe.scale.set(1,.5,1.5);
+
+legs.push(leg);
+
+}
+
+if(type==="fox"||type==="wolf"){
+
+let tail=cone(.38,1.5,fur,0,-.2,-.8,torso);
+
+tail.rotation.x=-Math.PI/2.8;
+
+}
+
+return {root,torso,arms,legs,seed};
+
+}
+
+const characters=[];
+
+const kinds=["fox","rabbit","wolf","bear"];
+
+const shirts=[0xff519e,0x40c6ed,0xf2b94e,0x9b75f5,0x55d5aa,0xff815d];
+
+for(let i=0;i<14;i++){
+
+let x=(i%5-2)*2.5+(Math.random()-.5)*.5;
+
+let z=Math.floor(i/5)*3.3-1.5;
+
+characters.push(animal(kinds[i%4],shirts[i%6],x,z,i*1.7));
+
+}
+
+const clock=new THREE.Clock();
+
+function animate(){
+
+requestAnimationFrame(animate);
+
+let t=clock.getElapsedTime();
+
+characters.forEach((c,i)=>{
+
+let p=t*3.6+c.seed;
+
+c.torso.position.y=2+Math.sin(p)*.16;
+
+c.torso.rotation.z=Math.sin(p*.5)*.13;
+
+c.torso.rotation.y=Math.sin(p*.35)*.28;
+
+c.arms[0].rotation.z=Math.sin(p)*.75;
+
+c.arms[1].rotation.z=-Math.sin(p+1)*.75;
+
+c.arms[0].rotation.x=Math.sin(p*.7)*.4;
+
+c.arms[1].rotation.x=-Math.sin(p*.7)*.4;
+
+c.legs[0].rotation.x=Math.sin(p)*.32;
+
+c.legs[1].rotation.x=-Math.sin(p)*.32;
+
+c.root.rotation.y=Math.sin(t*.3+c.seed)*.2;
+
+});
+
+disco.rotation.y=t*.6;
+
+spots.forEach((s,i)=>{
+
+s.target.position.set(
+
+Math.sin(t*.7+i*1.8)*8,
+
+0,
+
+Math.cos(t*.5+i*2)*7
+
+);
+
+});
+
+let aspect=innerWidth/innerHeight;
+
+let distance=aspect<.65?29:23;
+
+camera.position.x=Math.sin(t*.12)*5;
+
+camera.position.y=10+Math.sin(t*.16)*1.4;
+
+camera.position.z=distance+Math.cos(t*.11)*1.5;
+
+camera.lookAt(0,2,-2);
+
+renderer.render(scene,camera);
+
+}
+
+animate();
+
+addEventListener("resize",()=>{
+
+camera.aspect=innerWidth/innerHeight;
+
+camera.updateProjectionMatrix();
+
+renderer.setSize(innerWidth,innerHeight);
+
+});
+
+</script>
+
+</body>
+
+</html>
