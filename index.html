@@ -1,196 +1,743 @@
+<!doctype html>
 
-<!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wild Rave</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#160d30;color:white;font-family:Arial;text-align:center}
-header{padding:18px;background:#321653;font-size:26px;font-weight:bold;color:#ff9df5}
-#stage{height:350px;position:relative;overflow:hidden;background:radial-gradient(ellipse,#8540b8,#241039);border:3px solid #e359ed;border-radius:16px;margin:10px}
-#spot{position:absolute;top:12px;width:100%;font-weight:bold;color:#ffe68a;z-index:2}
-.dancer{position:absolute;font-size:42px;animation:dance .7s infinite alternate}
-.dancer small{display:block;font-size:11px;background:#241039;padding:4px;border-radius:6px}
-@keyframes dance{to{transform:translateY(-12px) rotate(10deg)}}
-.panel{background:#291a48;margin:10px;padding:14px;border-radius:14px}
-button{background:#ae4beb;color:white;border:0;border-radius:9px;padding:11px;margin:4px;font-weight:bold}
-input{padding:12px;border-radius:8px;border:0;width:90%;font-size:16px}
-#battle{display:none;background:#4d267b;padding:20px;margin:10px;border-radius:14px}
-#fighters{font-size:55px}
-#feed{font-size:13px;color:#ddc6ee}
-</style>
-</head>
-<body>
-<header>🪩 WILD RAVE 🪩</header>
-<div id="stage"><div id="spot">🎉 Welcome to the party!</div></div>
-<div id="battle">
-<h2>⚔️ DANCE BATTLE ⚔️</h2>
-<h1 id="timer">45</h1>
-<div id="fighters"></div>
-<p id="votes"></p>
-<button onclick="vote(1)">Vote !1</button>
-<button onclick="vote(2)">Vote !2</button>
-</div>
-<div class="panel">
-<h3>🎮 Join the Party</h3>
-<input id="user" value="PartyGuest" placeholder="Username">
-<p>
-<button onclick="join()">🐾 Join</button>
-<button onclick="like()">❤️ 100 Likes</button>
-<button onclick="follow()">⭐ Follow</button>
-</p>
-</div>
-<div class="panel">
-<h3>🎁 TikTok Gift Simulator</h3>
-<button onclick="gift('rose')">🌹 Rose</button>
-<button onclick="gift('doughnut')">🍩 Doughnut</button>
-<button onclick="gift('heart')">🫶 Hand Heart</button>
-<button onclick="gift('galaxy')">🦄 Galaxy</button>
-<button onclick="gift('jet')">🦁 Private Jet</button>
-<button onclick="gift('universe')">🐉 Universe</button>
-</div>
-<div class="panel">
-<button onclick="startBattle()">⚔️ Start Battle</button>
-<button onclick="demo()">👥 Add Dancers</button>
-<h3>🏆 Leaderboard</h3>
-<div id="leaders"></div>
-<h3>📣 Events</h3>
-<div id="feed"></div>
-</div>
-<script>
-const $=id=>document.getElementById(id);
-const animals=["🦆","🐸","🐼","🐧","🐰","🦊"];
-const pick=a=>a[Math.floor(Math.random()*a.length)];
-let players={},queue=[],battle=null,interval=null;
-const username=()=> $("user").value.trim().slice(0,20)||"PartyGuest";
 
-function log(s){
-let p=document.createElement("p");
-p.textContent=s;
-$("feed").prepend(p);
-while($("feed").children.length>10)$("feed").lastChild.remove();
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Wild Rave 2.0</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+html,body{margin:0;height:100%;background:#080816;color:white;font-family:system-ui,Arial}
+
+#game{position:relative;height:100dvh;max-width:640px;margin:auto;overflow:hidden;background:#090820}
+
+canvas{display:block;width:100%;height:100%}
+
+#hud{position:absolute;inset:0;pointer-events:none}
+
+#brand{position:absolute;top:calc(12px + env(safe-area-inset-top));left:15px;font-size:23px;font-weight:1000;letter-spacing:2px;text-shadow:0 3px 10px #000}
+
+#brand b{color:#ff67c9}
+
+#status{position:absolute;right:12px;top:calc(17px + env(safe-area-inset-top));font-size:11px;background:#111b;padding:7px 10px;border-radius:20px}
+
+#spot{position:absolute;top:72px;left:10%;width:80%;text-align:center;font-weight:900;font-size:16px;text-shadow:0 2px 12px black}
+
+#lower{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:14px;right:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+
+#events{font-size:12px;text-shadow:0 2px 5px #000;max-width:72%}
+
+#events div{margin-top:5px}
+
+button{border:0;background:#df48ad;color:white;border-radius:14px;padding:11px 14px;font-weight:800;font-size:13px;cursor:pointer}
+
+#controls{position:absolute;inset:auto 9px calc(75px + env(safe-area-inset-bottom));background:#130e2aee;border:1px solid #a747a9;border-radius:16px;padding:12px;display:none;pointer-events:auto;max-height:65%;overflow:auto}
+
+#controls.open{display:block}
+
+#controls input{width:100%;padding:11px;border:1px solid #73518e;border-radius:8px;background:#251d41;color:white;font-size:16px;margin-bottom:7px}
+
+#controls button{margin:3px;padding:9px}
+
+#controls h3{margin:4px 0 8px}
+
+#toggle{pointer-events:auto}
+
+#battle{position:absolute;top:24%;left:7%;width:86%;background:#1a1045ed;border:2px solid #f99cea;border-radius:20px;padding:18px;text-align:center;display:none;box-shadow:0 0 55px #a431ad}
+
+#battle.on{display:block}
+
+#battle h2{margin:0}
+
+#battle .versus{font-size:20px;font-weight:900;display:flex;justify-content:space-around;gap:12px;margin:15px 0}
+
+#battle .versus div{width:48%;overflow-wrap:anywhere}
+
+#battle button{pointer-events:auto}
+
+#battle .time{font-size:42px;font-weight:1000;color:#ffd57a}
+
+#bar{height:9px;border-radius:10px;background:#ff6ebc;width:50%;margin:10px 0}
+
+small{color:#c6a9e2}
+
+#hint{font-size:10px;opacity:.75;margin-top:7px}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="game">
+
+<canvas id="scene"></canvas>
+
+<div id="hud">
+
+<div id="brand">WILD <b>RAVE</b> 🪩</div>
+
+<div id="status">● SIMULATOR</div>
+
+<div id="spot">WELCOME TO THE CLUB</div>
+
+<div id="battle">
+
+<h2>⚡ DANCE BATTLE ⚡</h2>
+
+<div class="time" id="time">45</div>
+
+<div class="versus">
+
+<div id="b1"></div>
+
+<div>VS</div>
+
+<div id="b2"></div>
+
+</div>
+
+<div id="score"></div>
+
+<div style="background:#533b76;border-radius:10px;overflow:hidden">
+
+<div id="bar"></div>
+
+</div>
+
+<button onclick="vote(1)">VOTE !1</button>
+
+<button onclick="vote(2)">VOTE !2</button>
+
+</div>
+
+<div id="controls">
+
+<h3>🎮 TEST LIVE EVENTS</h3>
+
+<input id="user" value="PartyGuest" placeholder="Viewer username">
+
+<button onclick="join()">!join</button>
+
+<button onclick="like()">❤️ 100 Likes</button>
+
+<button onclick="follow()">⭐ Follow</button>
+
+<button onclick="gift('rose')">🌹 Rose</button>
+
+<button onclick="gift('doughnut')">🍩 Doughnut</button>
+
+<button onclick="gift('heart')">🫶 Hand Heart</button>
+
+<button onclick="gift('galaxy')">🌌 Galaxy</button>
+
+<button onclick="gift('jet')">✈️ Private Jet</button>
+
+<button onclick="gift('universe')">🌠 Universe</button>
+
+<button onclick="startBattle()">⚔️ Battle</button>
+
+<button onclick="demo()">👥 Fill Club</button>
+
+<div id="hint">3-minute inactivity timeout • Demo mode • No TikTok connection</div>
+
+</div>
+
+<div id="lower">
+
+<div id="events"></div>
+
+<button id="toggle" onclick="document.getElementById('controls').classList.toggle('open')">⚙ TEST</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const canvas=document.getElementById('scene');
+
+const ctx=canvas.getContext('2d');
+
+const $=id=>document.getElementById(id);
+
+const pick=a=>a[Math.random()*a.length|0];
+
+const rand=(a,b)=>a+Math.random()*(b-a);
+
+let W=390,H=780;
+
+let players=new Map(),priority=[],battle=null;
+
+let camera={x:0,y:0,z:1};
+
+let focus=null,focusUntil=0;
+
+let last=performance.now(),lastBattle=performance.now();
+
+const species=['fox','rabbit','wolf','cat','bear','deer'];
+
+const coats=['#db8650','#f5c9aa','#8b9cb8','#9c6a56','#d1a777','#ddd2c8'];
+
+const outfits=['#ff5eb9','#6bc9ff','#ffe36d','#a987ff','#5ce4bc'];
+
+function resize(){
+
+let d=Math.min(devicePixelRatio||1,2);
+
+W=canvas.clientWidth;H=canvas.clientHeight;
+
+canvas.width=W*d;canvas.height=H*d;
+
+ctx.setTransform(d,0,0,d,0,0);
+
 }
-function join(n=username()){
-if(!players[n]){
-players[n]={animal:pick(animals),xp:0,wins:0,x:10+Math.random()*75,y:65+Math.random()*210};
-log("🎉 @"+n+" joined!");
+
+addEventListener('resize',resize);resize();
+
+function notice(s){
+
+let el=document.createElement('div');
+
+el.textContent=s;
+
+$('events').prepend(el);
+
+while($('events').children.length>4)$('events').lastChild.remove();
+
+$('spot').textContent=s;
+
+setTimeout(()=>{
+
+if($('spot').textContent===s)$('spot').textContent='DANCE ALL NIGHT';
+
+},3500);
+
 }
-render();
-return players[n];
+
+function username(){
+
+return $('user').value.trim().slice(0,22)||'PartyGuest';
+
 }
-function render(){
-document.querySelectorAll(".dancer").forEach(e=>e.remove());
-Object.entries(players).forEach(([n,p])=>{
-let d=document.createElement("div");
-d.className="dancer";
-d.style.left=p.x+"%";
-d.style.top=p.y+"px";
-let a=document.createElement("div");
-a.textContent=p.animal;
-let label=document.createElement("small");
-label.textContent="@"+n;
-d.append(a,label);
-$("stage").append(d);
-});
-$("leaders").replaceChildren();
-Object.entries(players).sort((a,b)=>b[1].xp-a[1].xp).slice(0,8).forEach(([n,p],i)=>{
-let d=document.createElement("p");
-d.textContent=(i+1)+". "+p.animal+" @"+n+" — "+p.xp+" XP";
-$("leaders").append(d);
-});
-}
-function spotlight(n,event){
-$("spot").textContent="📸 @"+n+" — "+event;
-setTimeout(()=>$("spot").textContent="🎉 Dance party!",4500);
-}
-function like(){
-let n=username(),p=join(n);
-p.xp+=20;
-log("❤️ @"+n+" earned 20 XP!");
-render();
-}
-function follow(){
-let n=username(),p=join(n);
-p.xp+=75;
-spotlight(n,"New follower!");
-render();
-}
-function gift(g){
-let n=username(),p=join(n);
-let rewards={
-rose:[40,null,"Rose"],
-doughnut:[120,null,"Center stage solo"],
-heart:[150,null,"Next battle reservation"],
-galaxy:[600,"🦄","Galaxy unicorn"],
-jet:[1200,"🦁","Private Jet lion"],
-universe:[3000,"🐉","Universe dragon"]
+
+function get(n=username()){
+
+if(!players.has(n)){
+
+let p={
+
+n,species:pick(species),coat:pick(coats),
+
+shirt:pick(outfits),x:rand(-190,190),
+
+y:rand(-65,190),born:performance.now(),
+
+last:performance.now(),xp:0,scale:1,leaving:false
+
 };
-let r=rewards[g];
-p.xp+=r[0];
-if(r[1])p.animal=r[1];
-if(g==="heart")queue.push(n);
-spotlight(n,r[2]);
-log("🎁 @"+n+" sent "+r[2]);
-render();
+
+players.set(n,p);
+
+notice('🎉 @'+n+' entered the club');
+
+spotlight(n,3600);
+
 }
+
+let p=players.get(n);
+
+p.last=performance.now();
+
+p.leaving=false;
+
+return p;
+
+}
+
+function join(){get()}
+
+function spotlight(n,ms=5000){
+
+focus=n;focusUntil=performance.now()+ms;
+
+}
+
+function like(){
+
+let p=get();p.xp+=20;
+
+notice('❤️ @'+p.n+' +20 XP');
+
+}
+
+function follow(){
+
+let p=get();p.xp+=75;
+
+spotlight(p.n,5500);
+
+notice('⭐ @'+p.n+' followed!');
+
+}
+
+function gift(type){
+
+let p=get();
+
+let g={
+
+rose:[40,'Rose',null],
+
+doughnut:[120,'Center-stage solo',null],
+
+heart:[150,'Battle reservation',null],
+
+galaxy:[600,'Unicorn entrance','unicorn'],
+
+jet:[1200,'Lion entrance','lion'],
+
+universe:[3000,'Dragon entrance','dragon']
+
+}[type];
+
+p.xp+=g[0];
+
+if(g[2])p.species=g[2];
+
+if(type==='heart')priority.push(p.n);
+
+spotlight(p.n,type==='rose'?4000:9000);
+
+notice('🎁 @'+p.n+' — '+g[1]);
+
+if(type==='doughnut'){p.x=0;p.y=90}
+
+}
+
 function demo(){
-for(let i=0;i<6;i++)join("Dancer"+Math.floor(Math.random()*9999));
+
+for(let i=0;i<9;i++)
+
+get('Dancer'+Math.floor(rand(100,999)));
+
 }
+
 function startBattle(){
+
 if(battle)return;
-if(Object.keys(players).length<2){
-join("DiscoDuck");join("PartyFrog");
+
+if(players.size<2){
+
+get('DiscoFox');get('PartyRabbit');
+
 }
-let names=Object.keys(players);
-let a=queue.shift()||pick(names);
+
+let names=[...players.keys()];
+
+let a=priority.shift()||pick(names);
+
 let b=pick(names.filter(n=>n!==a));
-battle={a,b,v1:0,v2:0,seconds:45,voters:{}};
-$("battle").style.display="block";
-$("fighters").textContent=players[a].animal+" VS "+players[b].animal;
+
+if(!b)return;
+
+battle={a,b,until:performance.now()+45000,votes:new Map()};
+
+$('battle').classList.add('on');
+
+$('b1').textContent='@'+a;
+
+$('b2').textContent='@'+b;
+
+notice('⚔️ @'+a+' VS @'+b);
+
 updateBattle();
-log("⚔️ @"+a+" vs @"+b);
-interval=setInterval(()=>{
-battle.seconds--;
-updateBattle();
-if(battle.seconds<=0)endBattle();
-},1000);
+
 }
-function vote(side){
+
+function vote(i){
+
 if(!battle)return;
-let n=username();
-if(battle.voters[n])return;
-battle.voters[n]=true;
-if(side===1)battle.v1++;
-else battle.v2++;
+
+battle.votes.set(username(),i);
+
 updateBattle();
+
 }
+
 function updateBattle(){
-$("timer").textContent=battle.seconds;
-$("votes").textContent="@"+battle.a+": "+battle.v1+" votes | @"+battle.b+": "+battle.v2+" votes";
+
+if(!battle)return;
+
+let v=[...battle.votes.values()];
+
+let a=v.filter(x=>x===1).length,b=v.length-a;
+
+$('score').textContent=a+' votes  •  '+b+' votes';
+
+$('bar').style.width=(a+b?a/(a+b)*100:50)+'%';
+
+$('time').textContent=Math.max(0,Math.ceil((battle.until-performance.now())/1000));
+
 }
-function endBattle(){
-clearInterval(interval);
-let winner=battle.v1>battle.v2?battle.a:battle.v2>battle.v1?battle.b:null;
-if(winner){
-players[winner].xp+=200;
-players[winner].wins++;
-log("🏆 @"+winner+" wins!");
-spotlight(winner,"Battle champion!");
-}else log("🤝 Battle ended in a tie!");
+
+function finishBattle(){
+
+let v=[...battle.votes.values()];
+
+let a=v.filter(x=>x===1).length,b=v.length-a;
+
+let w=a>b?battle.a:b>a?battle.b:null;
+
+if(w){
+
+players.get(w).xp+=200;
+
+spotlight(w,7000);
+
+notice('🏆 @'+w+' WINS!');
+
+}else notice('🤝 DANCE BATTLE TIE!');
+
 battle=null;
-$("battle").style.display="none";
-render();
+
+$('battle').classList.remove('on');
+
+lastBattle=performance.now();
+
 }
-setInterval(()=>{
-Object.values(players).forEach(p=>{
-p.x=Math.max(5,Math.min(85,p.x+(Math.random()-.5)*12));
-p.y=Math.max(60,Math.min(290,p.y+(Math.random()-.5)*20));
-});
-render();
-},1500);
-join("PartyHost");
-join("DiscoDuck");
+
+function poly(points,fill){
+
+ctx.fillStyle=fill;ctx.beginPath();
+
+points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+
+ctx.closePath();ctx.fill();
+
+}
+
+function circle(x,y,r,color){
+
+ctx.fillStyle=color;ctx.beginPath();
+
+ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+
+}
+
+function ellipse(x,y,rx,ry,color){
+
+ctx.fillStyle=color;ctx.beginPath();
+
+ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill();
+
+}
+
+function line(x,y,X,Y,color,width=3){
+
+ctx.strokeStyle=color;ctx.lineWidth=width;
+
+ctx.lineCap='round';ctx.beginPath();
+
+ctx.moveTo(x,y);ctx.lineTo(X,Y);ctx.stroke();
+
+}
+
+function animal(p,t){
+
+let bob=Math.sin(t*4+p.x)*6;
+
+let arm=Math.sin(t*6+p.x)*.65;
+
+let leg=Math.sin(t*6+p.x+1)*.55;
+
+let x=p.x,y=p.y+bob;
+
+ctx.save();ctx.translate(x,y);
+
+let s=p.scale*(.75+(p.y+100)/650);
+
+ctx.scale(s,s);
+
+ellipse(0,7,29,10,'#06071599');
+
+line(-10,-37,-12+leg*13,0,'#27213b',11);
+
+line(10,-37,12-leg*13,0,'#27213b',11);
+
+ellipse(-12+leg*13,1,13,6,'#e8e8ff');
+
+ellipse(12-leg*13,1,13,6,'#e8e8ff');
+
+line(-18,-77,-29-arm*13,-43,'#322742',10);
+
+line(18,-77,29+arm*13,-43,'#322742',10);
+
+ellipse(0,-66,24,35,p.shirt);
+
+ellipse(0,-90,23,25,p.coat);
+
+let ears=p.species==='rabbit'?36:p.species==='deer'?29:17;
+
+poly([[-19,-103],[-17,-103-ears],[-3,-105]],p.coat);
+
+poly([[19,-103],[17,-103-ears],[3,-105]],p.coat);
+
+if(p.species==='bear'){
+
+circle(-18,-108,11,p.coat);
+
+circle(18,-108,11,p.coat);
+
+}
+
+if(p.species==='dragon'){
+
+poly([[-22,-110],[-28,-140],[-4,-113]],'#7fd5d4');
+
+poly([[22,-110],[28,-140],[4,-113]],'#7fd5d4');
+
+}
+
+if(p.species==='unicorn'){
+
+poly([[-6,-112],[0,-145],[6,-112]],'#ffe7a6');
+
+}
+
+ellipse(0,-81,15,10,'#f5e2d0');
+
+ellipse(-8,-96,3,5,'#19142d');
+
+ellipse(8,-96,3,5,'#19142d');
+
+circle(0,-84,3,'#3a2233');
+
+line(-4,-77,4,-77,'#67344e',1.5);
+
+if(p.species==='fox'||p.species==='wolf'||p.species==='lion')
+
+poly([[16,-62],[37,-47],[20,-43]],p.coat);
+
+ctx.textAlign='center';
+
+ctx.font='bold 12px system-ui';
+
+ctx.shadowColor='#000';ctx.shadowBlur=6;
+
+ctx.fillStyle='#fff';
+
+ctx.fillText('@'+p.n,0,-150);
+
+ctx.shadowBlur=0;ctx.restore();
+
+}
+
+function scene(t){
+
+let g=ctx.createLinearGradient(0,0,0,H);
+
+g.addColorStop(0,'#09071d');
+
+g.addColorStop(.55,'#29124b');
+
+g.addColorStop(1,'#140e2c');
+
+ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+let cx=W/2,cy=H*.58;
+
+ctx.save();
+
+ctx.translate(cx,cy);
+
+ctx.scale(camera.z,camera.z);
+
+ctx.translate(-camera.x,-camera.y);
+
+poly([[-600,-450],[600,-450],[600,40],[-600,40]],'#1b103a');
+
+for(let i=-5;i<=5;i++){
+
+let x=i*95;
+
+line(x,-440,x,0,'#602e7a',2);
+
+circle(x,-260,7,'#f34acb');
+
+}
+
+poly([[-560,20],[560,20],[760,510],[-760,510]],'#281f4c');
+
+for(let y=60;y<530;y+=62){
+
+let k=(y+100)/650;
+
+line(-600*k,y,600*k,y,'#5c3e87',2);
+
+}
+
+for(let x=-650;x<650;x+=70)
+
+line(x*.45,20,x,510,'#5c3e87',2);
+
+for(let i=0;i<4;i++){
+
+let x=Math.sin(t*.7+i*1.7)*250,y=-370;
+
+poly([[x,y],[x-150,420],[x+150,420]],
+
+['#f54abb16','#45d8ff16','#ffe45e12','#a267ff18'][i]);
+
+circle(x,y,14,
+
+['#ff54cc','#47dcff','#f3e47c','#9d7cff'][i]);
+
+}
+
+poly([[-220,-180],[220,-180],[250,-80],[-250,-80]],'#402060');
+
+poly([[-180,-255],[180,-255],[210,-175],[-210,-175]],'#522774');
+
+ctx.fillStyle='#d45cff';
+
+ctx.fillRect(-190,-175,380,8);
+
+ctx.fillStyle='#e8b5ff';
+
+ctx.font='bold 34px system-ui';
+
+ctx.textAlign='center';
+
+ctx.fillText('DJ WILD',0,-200);
+
+circle(0,-268,32,'#dfb38d');
+
+ellipse(0,-233,43,35,'#53b8d7');
+
+for(let i=0;i<2;i++){
+
+circle((i?1:-1)*92,-170,32,'#1a122c');
+
+circle((i?1:-1)*92,-170,18,'#a65ec5');
+
+}
+
+poly([[270,-120],[475,-120],[475,50],[270,50]],'#4c225d');
+
+ctx.fillStyle='#f4b1ff';
+
+ctx.font='bold 23px system-ui';
+
+ctx.fillText('VIP',365,-80);
+
+poly([[-480,-70],[-290,-70],[-290,100],[-480,100]],'#16112b');
+
+ctx.fillStyle='#b7f7ff';
+
+ctx.font='bold 18px system-ui';
+
+ctx.fillText('EXIT',-380,-36);
+
+let dancers=[...players.values()].sort((a,b)=>a.y-b.y);
+
+dancers.forEach(p=>animal(p,t));
+
+ctx.restore();
+
+let v=ctx.createRadialGradient(W/2,H/2,H*.15,W/2,H/2,H*.7);
+
+v.addColorStop(0,'#0000');
+
+v.addColorStop(1,'#060310aa');
+
+ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+
+}
+
+function loop(now){
+
+let t=now/1000,dt=Math.min(.05,(now-last)/1000);
+
+last=now;
+
+for(let [n,p] of players){
+
+if(now-p.last>180000&&!p.leaving){
+
+p.leaving=true;
+
+notice('👋 @'+n+' is leaving the club');
+
+}
+
+if(p.leaving){
+
+p.x-=dt*80;
+
+if(p.x< -430)players.delete(n);
+
+}else{
+
+p.x+=Math.sin(t*.5+p.y)*dt*4;
+
+p.y+=Math.sin(t*.6+p.x)*dt*3;
+
+}
+
+}
+
+let target=focus&&now<focusUntil&&players.has(focus)?players.get(focus):null;
+
+if(!target)focus=null;
+
+let tx=target?target.x:Math.sin(t*.15)*130;
+
+let ty=target?target.y-30:Math.cos(t*.11)*45;
+
+let tz=target?1.35:1.03+Math.sin(t*.21)*.08;
+
+camera.x+=(tx-camera.x)*Math.min(1,dt*1.2);
+
+camera.y+=(ty-camera.y)*Math.min(1,dt*1.2);
+
+camera.z+=(tz-camera.z)*Math.min(1,dt*.9);
+
+scene(t);
+
+if(battle){
+
+updateBattle();
+
+if(now>=battle.until)finishBattle();
+
+}else if(now-lastBattle>120000&&players.size>=2)
+
+startBattle();
+
+requestAnimationFrame(loop);
+
+}
+
+get('DiscoFox');
+
+get('RaveRabbit');
+
+get('DJGuest');
+
+requestAnimationFrame(loop);
+
 </script>
+
 </body>
+
 </html>
